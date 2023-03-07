@@ -11,6 +11,9 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
 public class CoinEat extends JFrame{
+	private	Image bufferImage;			// 버퍼 이미지 객체
+	private Graphics screenGraphic;		// 화면의 이미지를 얻어 올 그래픽 객체
+	
 	private Image backgroundImage = new ImageIcon("src/images/mainScreen.png").getImage();
 	private Image player = new ImageIcon("src/images/player.png").getImage();
 	private Image coin = new ImageIcon("src/images/coin.png").getImage();
@@ -74,7 +77,19 @@ public class CoinEat extends JFrame{
 				}
 			}
 		});
+		
 		Init();
+		
+		// 만들어 놓은 메서드 반복
+		while(true) {
+			try{
+				Thread.sleep(20);				// 대기시간 : 스레드의 실행 잠깐 멈추기
+			} catch(InterruptedException e) {	// interrupt :스레드를 종료하기 위한 메커니즘
+				e.printStackTrace();
+			}
+			keyProcess();
+			crashCheck();
+		}
 	}
 
 	// 게임 시작 시 초기화메서드 : Init()
@@ -88,37 +103,46 @@ public class CoinEat extends JFrame{
 		coinY = (int)(Math.random()*(501-playerWidth-30))+30;		// 프레임 크기 빼주기 : 30 
 	}
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	// keyProcess() : up, down, left, right의 boolean 값으로 플레이어를 이동시킬 메소드
 	// 플레이어의 가로, 세로 길이, 이동 거리 고려할 것
 	// 플레이어의 가로 : 50  |  플레이어의 세로 : 50  |  이동 거리 : 3
 	public void keyProcess() {
-		if(up && (playerY - 3) > 50) { playerY -= 3; }					  // up 이고, playerY - 3 가 50보다 클 때
+		if(up && (playerY - 3) > 30) { playerY -= 3; }					  // up 이고, playerY - 3(좌표) 가 30보다 클 때
 		// 왜 50보다 클때?
 		if(down && (playerY + playerHeight + 3) < 500) { playerY += 3; }  // dowm 이고, playerY + playerHeight + 3 가 500보다 작을 때
 		if(left && (playerX -3) > 0) { playerX -= 3; }					  // left이고, playerX -3 가 0보다 클 때
 		if(right && (playerX + playerWidth + 3) < 500) { playerX += 3; }
 	}
 	
+	// crashCheck() : 플레이어와 코인이 닿았을 때 점수 획득
+	public void crashCheck() {
+		// 충돌 범위 설정
+		if(playerX+playerWidth > coinX && coinX + coinWidth > playerX && playerY + playerHeight > coinY && coinY + coinHeight > playerY) {
+			score += 100; // 닿았을 때 점수 +100 	
+			coinX = (int)(Math.random()*(501-playerHeight));			// 코인 위치 옮겨주기 : 랜덤
+			coinY = (int)(Math.random()*(501-playerWidth-30))+30;		
+		}
+	}
 	
-	
+	// 더블 버퍼링 : 버퍼 이미지를 통해 화면의 깜빡임 최소화
+	// 화면 크기의 버퍼 이미지 생성, getGraphics() 통해 그래픽 받아오기
+	// 버퍼 : 속도차가 큰 두 대상이 입출력을 수행할 때 효율성을 위해 사용하는 임시 저장공간
+	public void paint(Graphics g) {
+		bufferImage = createImage(500, 500);
+		screenGraphic = bufferImage.getGraphics();
+		screenDraw(screenGraphic);				// screenDraw 호출, 해당 버퍼 이미지 화면에 그려주기
+		g.drawImage(bufferImage, 0, 0, null);	// drawImage(img x 좌표, img y 좌표, img width, img height)
+	}
 	
 	// 이미지 출력 메소드 : paint()
-	public void paint(Graphics g) {
+	public void screenDraw(Graphics g) {
 		g.drawImage(backgroundImage, 0, 0, null);			// 배경이미지
 		g.drawImage(player, playerX, playerY, null);		// 플레이어
 		g.drawImage(coin, coinX, coinY, null);				// 코인
 		g.setColor(Color.WHITE);							// score
 		g.setFont(new Font("Arial", Font.BOLD, 40));
 		g.drawString("SCORE : " + score, 30, 80);
+		this.repaint();
 	}
 	
 	public static void main(String[] args) {
