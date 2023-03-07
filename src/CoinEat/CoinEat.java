@@ -6,13 +6,22 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.IOException;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
 public class CoinEat extends JFrame{
 	private	Image bufferImage;			// 버퍼 이미지 객체
 	private Graphics screenGraphic;		// 화면의 이미지를 얻어 올 그래픽 객체
+	
+	private Clip clip;					// 음악 클립
 	
 	private Image backgroundImage = new ImageIcon("src/images/mainScreen.png").getImage();
 	private Image player = new ImageIcon("src/images/player.png").getImage();
@@ -101,17 +110,19 @@ public class CoinEat extends JFrame{
 		// z코인의 위치 : 랜덤 -> Math.random
 		coinX = (int)(Math.random()*(501-playerHeight));
 		coinY = (int)(Math.random()*(501-playerWidth-30))+30;		// 프레임 크기 빼주기 : 30 
+		
+		playSound("src/audio/play.wav", true);				// 백그라운드 음악
 	}
 	
 	// keyProcess() : up, down, left, right의 boolean 값으로 플레이어를 이동시킬 메소드
 	// 플레이어의 가로, 세로 길이, 이동 거리 고려할 것
-	// 플레이어의 가로 : 50  |  플레이어의 세로 : 50  |  이동 거리 : 3
+	// 플레이어의 가로 : 50  |  플레이어의 세로 : 50  |  이동 거리 : 10
 	public void keyProcess() {
-		if(up && (playerY - 3) > 30) { playerY -= 3; }					  // up 이고, playerY - 3(좌표) 가 30보다 클 때
+		if(up && (playerY - 10) > 30) { playerY -= 10; }					  // up 이고, playerY - 10(좌표) 가 30보다 클 때
 		// 왜 50보다 클때?
-		if(down && (playerY + playerHeight + 3) < 500) { playerY += 3; }  // dowm 이고, playerY + playerHeight + 3 가 500보다 작을 때
-		if(left && (playerX -3) > 0) { playerX -= 3; }					  // left이고, playerX -3 가 0보다 클 때
-		if(right && (playerX + playerWidth + 3) < 500) { playerX += 3; }
+		if(down && (playerY + playerHeight + 10) < 500) { playerY += 10; }  // down 이고, playerY + playerHeight + 10 가 500보다 작을 때
+		if(left && (playerX - 10) > 0) { playerX -= 10; }					  // left이고, playerX -10 가 0보다 클 때
+		if(right && (playerX + playerWidth + 10) < 500) { playerX += 10; }
 	}
 	
 	// crashCheck() : 플레이어와 코인이 닿았을 때 점수 획득
@@ -119,8 +130,29 @@ public class CoinEat extends JFrame{
 		// 충돌 범위 설정
 		if(playerX+playerWidth > coinX && coinX + coinWidth > playerX && playerY + playerHeight > coinY && coinY + coinHeight > playerY) {
 			score += 100; // 닿았을 때 점수 +100 	
+			playSound("src/audio/coin.wav", false);	
 			coinX = (int)(Math.random()*(501-playerHeight));			// 코인 위치 옮겨주기 : 랜덤
-			coinY = (int)(Math.random()*(501-playerWidth-30))+30;		
+			coinY = (int)(Math.random()*(501-playerWidth-30))+30;	
+			
+		}
+	}
+	
+	// playSound() 메소드 : 오디오 재생 메소드 - 오디오 재생, 무한 반복 여부 설정
+	public void playSound(String pathName, boolean isLoop) {
+		try {
+			clip = AudioSystem.getClip();
+			File audioFile = new File(pathName);
+			AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
+			clip.open(audioStream);
+			clip.start();
+			if(isLoop)
+				clip.loop(Clip.LOOP_CONTINUOUSLY);
+		} catch(LineUnavailableException e){		// 다른 응용프로그램에서 이미 사용중일 때 사용할 수 없는 예외
+			e.printStackTrace();
+		} catch(UnsupportedAudioFileException e){   // 파일 타입, 형식 사용할 수 없는 예외
+			e.printStackTrace();
+		} catch(IOException e){
+			e.printStackTrace();
 		}
 	}
 	
